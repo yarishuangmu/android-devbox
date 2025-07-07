@@ -1,0 +1,12 @@
+连接本地 模拟器或者设备
+
+$ adb devices
+List of devices attached
+emulator-5554   device
+注意： emulator-5554 这个 ID 对应的 ADB 网络端口通常是 5555。如果有多个模拟器，端口号会是 5557, 5559 等。
+# 将远程 Codespace 的 5555 端口转发到本地的 5555 端口
+gh codespace port-forward 5555:5555
+
+
+# 连接到通过隧道转发过来的本地端口
+adb connect localhost:5555

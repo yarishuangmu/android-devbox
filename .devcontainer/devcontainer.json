@@ -1,0 +1,28 @@
+{
+  "name": "Android Development",
+  // 使用一个包含基础工具的通用镜像
+  "image": "mcr.microsoft.com/devcontainers/universal:2-linux",
+
+  // 在容器创建后运行我们的安装脚本
+  "postCreateCommand": ".devcontainer/setup.sh",
+
+  // 保持命令运行，防止容器退出
+  "overrideCommand": false,
+
+  // 为 VS Code 推荐的扩展
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "fwcd.kotlin",
+        "naco-siren.gradle-language"
+      ]
+    }
+  },
+
+  // 设置安卓开发所需的环境变量
+  "remoteEnv": {
+    "ANDROID_SDK_ROOT": "/usr/lib/android-sdk",
+    "PATH": "${containerEnv:PATH}:/usr/lib/android-sdk/cmdline-tools/latest/bin:/usr/lib/android-sdk/platform-tools"
+  }
+}
