@@ -1,0 +1,25 @@
+连接本地 模拟器或者设备
+
+$ adb devices
+List of devices attached
+emulator-5554   device
+注意： emulator-5554 这个 ID 对应的 ADB 网络端口通常是 5555。如果有多个模拟器，端口号会是 5557, 5559 等。
+# 将远程 Codespace 的 5555 端口转发到本地的 5555 端口
+gh codespace ports forward 5555:5555
+
+
+# 连接到通过隧道转发过来的本地端口
+adb connect localhost:5555
+ngrok config add-authtoken 2zb7Qqri5yB3NOPXoriwY0PHZMs_89aEyCMFKa5NCWBmYd2wo
+./ngrok tcp 22
+adb -s emulator-5554 tcpip 5555
+emulator -list-avds
+ngrok
+emulator -avd <avd_name>
+ssh -L 5037:127.0.0.1:5037 user@0.tcp.jp.ngrok.io -p 11422
+
+sudo apt-get update
+sudo apt-get install socat
+socat TCP-LISTEN:5037,fork TCP:localhost:5037
+netstat -tuln -p | grep :5037
+adb kill-server
