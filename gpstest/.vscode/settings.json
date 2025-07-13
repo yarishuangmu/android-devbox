@@ -30,8 +30,8 @@
         "**/.idea": true
     },
     "editor.codeActionsOnSave": {
-        "source.organizeImports": true,
-        "source.fixAll": true
+        "source.organizeImports": "explicit",
+        "source.fixAll": "explicit"
     },
     "debug.internalConsoleOptions": "openOnSessionStart",
     "debug.terminal.clearBeforeReusing": true,
@@ -39,7 +39,7 @@
         "editor.defaultFormatter": "fwcd.kotlin",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
-            "source.organizeImports": true
+            "source.organizeImports": "explicit"
         }
     },
     "terminal.integrated.cwd": "${workspaceFolder}",
