@@ -2,14 +2,104 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Assemble Debug APK",
+            "label": "build debug apk",
             "type": "shell",
-            "command": "./gradlew assembleDebug",
-            "group": "build",
-            "problemMatcher": ["$javac"],
+            "command": "./gradlew",
+            "args": [
+                "assembleDebug",
+                "--stacktrace"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "clean build",
+            "type": "shell",
+            "command": "./gradlew",
+            "args": [
+                "clean",
+                "assembleDebug",
+                "--stacktrace"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "install apk",
+            "type": "shell",
+            "command": "adb",
+            "args": [
+                "-s",
+                "192.168.9.101:1031",
+                "install",
+                "-r",
+                "-t",
+                "-g",
+                "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
                 "reveal": "always"
+            },
+            "dependsOn": "build debug apk"
+        },
+        {
+            "label": "view logcat",
+            "type": "shell",
+            "command": "adb",
+            "args": [
+                "-s",
+                "192.168.9.101:1031",
+                "logcat",
+                "-v",
+                "time",
+                "AndroidRuntime:E",
+                "*:W"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            },
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "default"
             }
+        }
+    ],
+    "configurations": [
+        {
+            "name": "Attach to Android Process",
+            "type": "android",
+            "request": "attach",
+            "device": "emulator-5554",
+            "appPackage": "com.ansiwei.net",
+            "timeout": 30000
         }
     ]
 }

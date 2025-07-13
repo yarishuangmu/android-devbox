@@ -1,3 +1,47 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.jdt.ls.java.home": "/Users/liujinlin/Library/Java/JavaVirtualMachines/openjdk-24.0.1/Contents/Home",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "/Users/liujinlin/Library/Java/JavaVirtualMachines/openjdk-24.0.1/Contents/Home",
+            "default": true
+        }
+    ],
+    "android.enableJavaLanguageSupport": true,
+    "android.logcatView": "both",
+    "android.autoConnectNativeDebugger": false,
+    "java.configuration.workspaceCacheLimit": 90,
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.debug.logLevel": "INFO",
+    "java.debug.settings.enableRunDebugCodeLens": true,
+    "kotlin.languageServer.enabled": true,
+    "kotlin.compiler.jvm.target": "17",
+    "files.exclude": {
+        "**/build": true,
+        "**/.gradle": true,
+        "**/local.properties": true,
+        "**/.idea": true
+    },
+    "search.exclude": {
+        "**/build": true,
+        "**/.gradle": true,
+        "**/node_modules": true,
+        "**/.idea": true
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true,
+        "source.fixAll": true
+    },
+    "debug.internalConsoleOptions": "openOnSessionStart",
+    "debug.terminal.clearBeforeReusing": true,
+    "[kotlin]": {
+        "editor.defaultFormatter": "fwcd.kotlin",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.integrated.shellIntegration.enabled": true
 }
