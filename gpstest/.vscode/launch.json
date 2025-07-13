@@ -1,0 +1,66 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "android",
+            "request": "launch",
+            "name": "GPS Test Debug",
+            "preLaunchTask": "build debug apk",
+            "appSrcRoot": "${workspaceFolder}/app/src/main",
+            "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+            "adbSocket": "localhost:5037",
+            "autoStartADB": true,
+            "staleBuild": "warn",
+            "targetDevice": "192.168.9.101:1031",
+            "manifestFile": "${workspaceFolder}/app/src/main/AndroidManifest.xml",
+            "pmInstallArgs": [
+                "-r",
+                "-t",
+                "-g"
+            ],
+            "amStartArgs": [
+                "-D",
+                "-W",
+                "--activity-brought-to-front",
+                "-a",
+                "android.intent.action.MAIN",
+                "-c",
+                "android.intent.category.LAUNCHER",
+                "-n",
+                "com.ansiwei.net/.MainActivity"
+            ],
+            "postLaunchPause": 5000,
+            "trace": true
+        },
+        {
+            "type": "android",
+            "request": "launch",
+            "name": "GPS Test Launch Only",
+            "preLaunchTask": "build debug apk",
+            "appSrcRoot": "${workspaceFolder}/app/src/main",
+            "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+            "adbSocket": "localhost:5037",
+            "autoStartADB": true,
+            "staleBuild": "warn",
+            "targetDevice": "192.168.9.101:1031",
+            "manifestFile": "${workspaceFolder}/app/src/main/AndroidManifest.xml",
+            "pmInstallArgs": [
+                "-r",
+                "-t",
+                "-g"
+            ],
+            "amStartArgs": [
+                "-W",
+                "--activity-brought-to-front",
+                "-a",
+                "android.intent.action.MAIN",
+                "-c",
+                "android.intent.category.LAUNCHER",
+                "-n",
+                "com.ansiwei.net/.MainActivity"
+            ],
+            "postLaunchPause": 3000,
+            "trace": false
+        }
+    ]
+}

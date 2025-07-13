@@ -1,0 +1,11 @@
+{
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.home": "/你的/jdk/路径",
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "/你的/jdk/路径",
+            "default": true
+        }
+    ]
+}
