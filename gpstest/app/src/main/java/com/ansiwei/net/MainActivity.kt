@@ -1,7 +1,6 @@
 package com.ansiwei.net
 
 import android.Manifest
-import android.Manifest.permission.READ_PHONE_STATE
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -16,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,7 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.ansiwei.net.ui.theme.GpsTestTheme
+import com.ansiwei.net.ui.theme.GpsTheme
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -41,10 +41,11 @@ import kotlinx.coroutines.*
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { GpsTestTheme { Surface(modifier = Modifier.fillMaxSize()) { MainScreen() } } }
+        setContent { GpsTheme { Surface(modifier = Modifier.fillMaxSize()) { MainScreen() } } }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
@@ -52,18 +53,13 @@ fun MainScreen() {
     var selectedTab by remember { mutableStateOf(0) }
     var nmeaMessage by remember { mutableStateOf("等待GPS数据...") }
 
-    // 扩展的信号信息状态
+    // 只保留蜂窝主信号相关状态
     var signalStrengthDbm by remember { mutableStateOf("未知") }
-    var signalType by remember { mutableStateOf("") }
-    var networkOperator by remember { mutableStateOf("未知") }
-    var imsi by remember { mutableStateOf("未知") }
-    var phoneNumber by remember { mutableStateOf("未知") }
-    var cellId by remember { mutableStateOf("未知") }
-    var lac by remember { mutableStateOf("未知") }
+    var networkType by remember { mutableStateOf("未知") }
+    var operatorName by remember { mutableStateOf("未知") }
     var mcc by remember { mutableStateOf("未知") }
     var mnc by remember { mutableStateOf("未知") }
-    var frequency by remember { mutableStateOf("未知") }
-    var networkGeneration by remember { mutableStateOf("未知") }
+    var cellId by remember { mutableStateOf("未知") }
 
     var gpsStatus by remember { mutableStateOf("检查中...") }
 
@@ -480,234 +476,129 @@ fun MainScreen() {
         }
     }
 
-    // 信号强度监听 - 依赖权限状态
-    DisposableEffect(hasPhonePermission, hasPhoneNumberPermission) {
-        val phoneEffectLog =
-                "[${getNowTimeString()}] 信号监听Effect触发，电话权限: $hasPhonePermission, 号码权限: $hasPhoneNumberPermission"
-        logList.add(phoneEffectLog)
-        Log.d("GPSTest", phoneEffectLog)
-
-        if (hasPhonePermission && telephonyManager != null) {
-
-            // 安全地读取电话信息，增加详细的异常处理
+    // 实时蜂窝信号监听（仅主卡）
+    DisposableEffect(Unit) {
+        val updateCellInfo: () -> Unit = {
             try {
                 if (ActivityCompat.checkSelfPermission(
                                 context,
                                 Manifest.permission.READ_PHONE_STATE
                         ) == PackageManager.PERMISSION_GRANTED
                 ) {
-
-                    // 安全获取IMSI
-                    imsi =
-                            try {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                    // Android 10+ 需要特殊处理
-                                    "受限访问(Android 10+)"
-                                } else {
-                                    telephonyManager.subscriberId ?: "未知"
-                                }
-                            } catch (e: SecurityException) {
-                                val errorMsg = "权限不足(${e.message})"
-                                logList.add("[${getNowTimeString()}] IMSI读取失败: $errorMsg")
-                                errorMsg
-                            } catch (e: Exception) {
-                                val errorMsg = "读取错误(${e.javaClass.simpleName})"
-                                logList.add("[${getNowTimeString()}] IMSI读取异常: $errorMsg")
-                                errorMsg
-                            }
-
-                    // 安全获取网络运营商
-                    networkOperator =
-                            try {
-                                telephonyManager.networkOperatorName ?: "未知"
-                            } catch (e: Exception) {
-                                logList.add("[${getNowTimeString()}] 运营商名称读取失败: ${e.message}")
-                                "读取失败"
-                            }
-
-                    // 获取MCC和MNC
-                    try {
-                        val networkOperatorCode = telephonyManager.networkOperator
-                        if (networkOperatorCode != null && networkOperatorCode.length >= 5) {
-                            mcc = networkOperatorCode.substring(0, 3)
-                            mnc = networkOperatorCode.substring(3)
-                        } else {
-                            mcc = "未知"
-                            mnc = "未知"
-                        }
-                    } catch (e: Exception) {
-                        logList.add("[${getNowTimeString()}] MCC/MNC读取失败: ${e.message}")
-                        mcc = "读取失败"
-                        mnc = "读取失败"
-                    }
-                }
-
-                // 安全获取电话号码
-                if (hasPhoneNumberPermission) {
-                    phoneNumber =
-                            try {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    // Android 8+ 使用新的权限检查
-                                    if (ActivityCompat.checkSelfPermission(
-                                                    context,
-                                                    Manifest.permission.READ_PHONE_NUMBERS
-                                            ) == PackageManager.PERMISSION_GRANTED
-                                    ) {
-                                        telephonyManager.line1Number ?: "未获取到"
-                                    } else {
-                                        "权限不足"
-                                    }
-                                } else {
-                                    telephonyManager.line1Number ?: "未获取到"
-                                }
-                            } catch (e: SecurityException) {
-                                val errorMsg = "权限不足(${e.message})"
-                                logList.add("[${getNowTimeString()}] 电话号码读取失败: $errorMsg")
-                                errorMsg
-                            } catch (e: Exception) {
-                                val errorMsg = "读取错误(${e.javaClass.simpleName})"
-                                logList.add("[${getNowTimeString()}] 电话号码读取异常: $errorMsg")
-                                errorMsg
-                            }
-                }
-
-                // 添加详细的权限状态日志
-                val statusLog =
-                        "[${getNowTimeString()}] 电话信息读取完成 - IMSI:${imsi.take(10)}, 运营商:$networkOperator"
-                logList.add(statusLog)
-                Log.d("GPSTest", statusLog)
-            } catch (e: SecurityException) {
-                val errorLog = "[${getNowTimeString()}] 电话信息读取权限被拒绝: ${e.message}"
-                logList.add(errorLog)
-                Log.e("GPSTest", errorLog)
-
-                // 设置错误状态
-                imsi = "权限被拒绝"
-                networkOperator = "权限被拒绝"
-                phoneNumber = "权限被拒绝"
-                mcc = "未知"
-                mnc = "未知"
-            } catch (e: Exception) {
-                val errorLog = "[${getNowTimeString()}] 电话信息读取失败: ${e.message}"
-                logList.add(errorLog)
-                Log.e("GPSTest", errorLog)
-
-                // 设置错误状态
-                imsi = "读取失败"
-                networkOperator = "读取失败"
-                phoneNumber = "读取失败"
-                mcc = "未知"
-                mnc = "未知"
-            }
-
-            // 增强的信号强度监听 - 依赖权限状态
-            val phoneStateListener =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        // Android 12+ 使用新的监听器
-                        object :
-                                TelephonyCallback(),
-                                TelephonyCallback.SignalStrengthsListener,
-                                TelephonyCallback.CellLocationListener {
-                            override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
-                                handleSignalStrengthChanged(signalStrength) {
-                                        dbm,
-                                        type,
-                                        generation,
-                                        freq ->
-                                    signalStrengthDbm = dbm
-                                    signalType = type
-                                    networkGeneration = generation
-                                    frequency = freq
-                                }
-                            }
-
-                            override fun onCellLocationChanged(location: CellLocation) {
-                                handleCellLocationChanged(location) { cid, lacValue ->
-                                    cellId = cid
-                                    lac = lacValue
-                                }
-                            }
-                        }
+                    // 获取运营商
+                    operatorName = telephonyManager?.networkOperatorName ?: "未知"
+                    // 获取MCC/MNC
+                    val op = telephonyManager?.networkOperator
+                    if (op != null && op.length >= 5) {
+                        mcc = op.substring(0, 3)
+                        mnc = op.substring(3)
                     } else {
-                        // Android 11 及以下使用旧的监听器
-                        object : PhoneStateListener() {
-                            override fun onSignalStrengthsChanged(signalStrength: SignalStrength?) {
-                                super.onSignalStrengthsChanged(signalStrength)
-                                signalStrength?.let {
-                                    handleSignalStrengthChanged(it) { dbm, type, generation, freq ->
-                                        signalStrengthDbm = dbm
-                                        signalType = type
-                                        networkGeneration = generation
-                                        frequency = freq
-                                    }
-                                }
+                        mcc = "未知"
+                        mnc = "未知"
+                    }
+                    // 获取网络类型
+                    networkType =
+                            when (telephonyManager?.networkType) {
+                                TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
+                                TelephonyManager.NETWORK_TYPE_NR -> "5G NR"
+                                TelephonyManager.NETWORK_TYPE_GSM -> "GSM"
+                                TelephonyManager.NETWORK_TYPE_TD_SCDMA -> "TD-SCDMA"
+                                TelephonyManager.NETWORK_TYPE_CDMA -> "CDMA"
+                                TelephonyManager.NETWORK_TYPE_EDGE -> "EDGE"
+                                TelephonyManager.NETWORK_TYPE_HSPA -> "HSPA"
+                                TelephonyManager.NETWORK_TYPE_HSPAP -> "HSPA+"
+                                TelephonyManager.NETWORK_TYPE_EVDO_0,
+                                TelephonyManager.NETWORK_TYPE_EVDO_A,
+                                TelephonyManager.NETWORK_TYPE_EVDO_B -> "EVDO"
+                                TelephonyManager.NETWORK_TYPE_UMTS -> "WCDMA"
+                                TelephonyManager.NETWORK_TYPE_GPRS -> "GPRS"
+                                TelephonyManager.NETWORK_TYPE_EHRPD -> "eHRPD"
+                                TelephonyManager.NETWORK_TYPE_IDEN -> "iDEN"
+                                TelephonyManager.NETWORK_TYPE_1xRTT -> "1xRTT"
+                                TelephonyManager.NETWORK_TYPE_HSUPA -> "HSUPA"
+                                TelephonyManager.NETWORK_TYPE_HSDPA -> "HSDPA"
+                                TelephonyManager.NETWORK_TYPE_UNKNOWN, null -> "未知"
+                                else -> "其他"
                             }
-
-                            override fun onCellLocationChanged(location: CellLocation?) {
-                                super.onCellLocationChanged(location)
-                                location?.let {
-                                    handleCellLocationChanged(it) { cid, lacValue ->
-                                        cellId = cid
-                                        lac = lacValue
-                                    }
-                                }
-                            }
+                    // 获取主卡信号强度和小区ID
+                    val cellInfoList = telephonyManager?.allCellInfo
+                    val mainCell = cellInfoList?.firstOrNull { it.isRegistered }
+                    when (mainCell) {
+                        is CellInfoLte -> {
+                            signalStrengthDbm = mainCell.cellSignalStrength.dbm.toString()
+                            cellId =
+                                    mainCell.cellIdentity
+                                            .ci
+                                            .takeIf { it != Int.MAX_VALUE }
+                                            ?.toString()
+                                            ?: "未知"
+                        }
+                        is CellInfoNr -> {
+                            signalStrengthDbm = mainCell.cellSignalStrength.dbm.toString()
+                            cellId = mainCell.cellIdentity.toString()
+                        }
+                        is CellInfoWcdma -> {
+                            signalStrengthDbm = mainCell.cellSignalStrength.dbm.toString()
+                            cellId =
+                                    mainCell.cellIdentity
+                                            .cid
+                                            .takeIf { it != Int.MAX_VALUE }
+                                            ?.toString()
+                                            ?: "未知"
+                        }
+                        is CellInfoGsm -> {
+                            signalStrengthDbm = mainCell.cellSignalStrength.dbm.toString()
+                            cellId =
+                                    mainCell.cellIdentity
+                                            .cid
+                                            .takeIf { it != Int.MAX_VALUE }
+                                            ?.toString()
+                                            ?: "未知"
+                        }
+                        is CellInfoCdma -> {
+                            signalStrengthDbm = mainCell.cellSignalStrength.dbm.toString()
+                            cellId =
+                                    mainCell.cellIdentity
+                                            .basestationId
+                                            .takeIf { it != Int.MAX_VALUE }
+                                            ?.toString()
+                                            ?: "未知"
+                        }
+                        else -> {
+                            signalStrengthDbm = "未知"
+                            cellId = "未知"
                         }
                     }
-
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    telephonyManager.registerTelephonyCallback(
-                            ContextCompat.getMainExecutor(context),
-                            phoneStateListener as TelephonyCallback
-                    )
                 } else {
-                    @Suppress("DEPRECATION")
-                    telephonyManager.listen(
-                            phoneStateListener as PhoneStateListener,
-                            PhoneStateListener.LISTEN_SIGNAL_STRENGTHS or
-                                    PhoneStateListener.LISTEN_CELL_LOCATION
-                    )
+                    signalStrengthDbm = "需要电话权限"
+                    networkType = "未知"
+                    operatorName = "未知"
+                    mcc = "未知"
+                    mnc = "未知"
+                    cellId = "未知"
                 }
-
-                val initLog = "[${getNowTimeString()}] 增强信号监听器已启动"
-                logList.add(initLog)
-                Log.d("GPSTest", initLog)
-            } catch (e: Exception) {
-                val errorLog = "[${getNowTimeString()}] 信号监听启动失败: ${e.message}"
-                logList.add(errorLog)
-                Log.e("GPSTest", errorLog, e)
+            } catch (_: Exception) {
+                signalStrengthDbm = "未知"
+                networkType = "未知"
+                operatorName = "未知"
+                mcc = "未知"
+                mnc = "未知"
+                cellId = "未知"
             }
+        }
 
-            onDispose {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        telephonyManager.unregisterTelephonyCallback(
-                                phoneStateListener as TelephonyCallback
-                        )
-                    } else {
-                        @Suppress("DEPRECATION")
-                        telephonyManager.listen(
-                                phoneStateListener as PhoneStateListener,
-                                PhoneStateListener.LISTEN_NONE
-                        )
-                    }
-                    val disposeLog = "[${getNowTimeString()}] 增强信号监听器已停止"
-                    logList.add(disposeLog)
-                    Log.d("GPSTest", disposeLog)
-                } catch (e: Exception) {
-                    val errorLog = "[${getNowTimeString()}] 信号监听器停止失败: ${e.message}"
-                    logList.add(errorLog)
-                    Log.e("GPSTest", errorLog, e)
-                }
-            }
-        } else {
-            signalStrengthDbm = "需要电话权限"
-            signalType = "未知"
-            val phonePermLog = "[${getNowTimeString()}] 电话权限未授予或TelephonyManager不可用"
-            logList.add(phonePermLog)
-            Log.w("GPSTest", phonePermLog)
-            onDispose {}
+        // 定时刷新蜂窝信息
+        val scheduler = Executors.newSingleThreadScheduledExecutor()
+        val future =
+                scheduler.scheduleAtFixedRate(
+                        updateCellInfo,
+                        0,
+                        2,
+                        java.util.concurrent.TimeUnit.SECONDS
+                )
+        onDispose {
+            future.cancel(true)
+            scheduler.shutdown()
         }
     }
 
@@ -715,7 +606,7 @@ fun MainScreen() {
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTab) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("GPS") })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("信号详情") })
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("蜂窝信号") })
             Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("系统设置") })
         }
 
@@ -734,18 +625,13 @@ fun MainScreen() {
                             satelliteList = satelliteList
                     )
             1 ->
-                    EnhancedSignalTab(
+                    CellularSignalTab(
                             signalStrengthDbm = signalStrengthDbm,
-                            signalType = signalType,
-                            networkOperator = networkOperator,
-                            imsi = imsi,
-                            phoneNumber = phoneNumber,
-                            cellId = cellId,
-                            lac = lac,
+                            networkType = networkType,
+                            operatorName = operatorName,
                             mcc = mcc,
                             mnc = mnc,
-                            frequency = frequency,
-                            networkGeneration = networkGeneration
+                            cellId = cellId
                     )
             2 -> SettingsTab(context = context, logList = logList)
         }
@@ -1458,11 +1344,13 @@ fun SettingsTab(context: Context, logList: List<String>) {
     }
 }
 
-// 保存日志到文件
+// 保存日志到文件，目录改为 /sdcard/log/gpstest
 fun saveLogToFile(context: Context, logs: List<String>) {
     val time = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+    val dir = File("/sdcard/log/gpstest")
+    if (!dir.exists()) dir.mkdirs()
     val fileName = "gps_log_$time.txt"
-    val file = File(context.getExternalFilesDir(null), fileName)
+    val file = File(dir, fileName)
     try {
         FileOutputStream(file).use { out -> logs.forEach { out.write((it + "\n").toByteArray()) } }
         Toast.makeText(context, "日志已保存: ${file.absolutePath}", Toast.LENGTH_LONG).show()
@@ -1626,7 +1514,6 @@ fun parseNmeaMessage(
     }
 }
 
-// 格式化纬度
 fun formatLatitude(latStr: String, direction: String): String {
     return try {
         val lat = latStr.toDouble()
@@ -1653,3 +1540,50 @@ fun formatLongitude(lonStr: String, direction: String): String {
         "解析错误"
     }
 }
+
+// 添加缺失的 CellularSignalTab 组件，解决 Unresolved reference: CellularSignalTab 编译错误
+
+@Composable
+fun CellularSignalTab(
+    signalStrengthDbm: String,
+    networkType: String,
+    operatorName: String,
+    mcc: String,
+    mnc: String,
+    cellId: String
+) {
+    // 新增RSSI等相关信息显示
+    val rssi = signalStrengthDbm // 目前主流API下dbm即为rssi
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+        Text(text = "蜂窝信号详情", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(text = "信号强度", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "$signalStrengthDbm dBm",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = when {
+                        signalStrengthDbm == "未知" -> Color.Gray
+                        signalStrengthDbm.toIntOrNull()?.let { it >= -70 } == true -> Color.Green
+                        signalStrengthDbm.toIntOrNull()?.let { it >= -85 } == true -> Color(0xFF8BC34A)
+                        signalStrengthDbm.toIntOrNull()?.let { it >= -100 } == true -> Color(0xFFFF9800)
+                        else -> Color.Red
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "RSSI: $rssi dBm", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "网络类型: $networkType", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "运营商: $operatorName", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "MCC: $mcc", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "MNC: $mnc", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "小区ID: $cellId", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+       
